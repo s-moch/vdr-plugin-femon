@@ -120,8 +120,21 @@ cOsdObject *cPluginFemon::MainMenuAction(void)
 {
   // Perform the action when selected from the main VDR menu.
   debug1("%s", __PRETTY_FUNCTION__);
+#if APIVERSNUM >= 20402
+  bool isPlaying;
+  bool noChannels;
+  {  // minimal scope to avoid potential deadlock with two mutexes
+     cMutexLock mutexLock;
+     isPlaying = cControl::Control(mutexLock);
+  }{
+     LOCK_CHANNELS_READ;
+     noChannels = Channels->Count() <= 0;
+  }
+  if (isPlaying || noChannels)
+#else
   LOCK_CHANNELS_READ;
   if (cControl::Control() || (Channels->Count() <= 0))
+#endif
      Skins.Message(mtInfo, tr("Femon not available"));
   else
      return cFemonOsd::Instance(true);
